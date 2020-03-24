@@ -1,0 +1,62 @@
+# Extract tarfile
+import tarfile
+my_tar = tarfile.open("E:\Helen\FinalProject_INFO5731\datasets_covid19_researchpapers\subset_2.tar.gz")
+my_tar.extractall("E:\Helen\FinalProject_INFO5731\datasets_covid19_researchpapers\dataset_extracted") # specify which folder to extract to
+my_tar.close()
+
+# Import packages
+import os
+import json
+import pandas as pd
+
+# Iterate to open and read all json files in folder
+biorxiv_dir = r"E:\Helen\FinalProject_INFO5731\datasets_covid19_researchpapers\dataset_extracted\biorxiv_medrxiv"
+print(type(biorxiv_dir))
+filenames = os.listdir(biorxiv_dir)
+print("Number of articles retrieved from biorxiv:", len(filenames))
+
+# Store content of all json files in a list
+all_files = []
+for filename in filenames:
+    filename = os.path.join(biorxiv_dir, filename) # 'r' +'"'+ os.path.join(biorxiv_dir, filename) + '"'
+    filename.encode('unicode-escape')
+    file = json.load(open(filename, 'rb'))
+    all_files.append(file)
+    
+# What keys in those json files?
+print(all_files[800].keys())   
+
+# Extract all needed content
+
+# Extract paperids and paper titles
+paper_id=[file['paper_id'] for file in all_files]
+titles = [file['metadata']['title'] for file in all_files]
+
+# Extract author_names, affiliations, abstract_text, body_text
+
+author_names, affiliations, abstract_text, body_text=[], [], [], []
+
+authors= [file ['metadata']['authors'] for file in all_files]
+for element in authors:
+    author_names.append([item['first'] +" "+ item['last']  for item in element])
+    try:
+        affiliations.append([item['affiliation']['institution'] for item in element])
+    except:
+        affiliations.append([' '])
+
+abstracts = [file ['abstract'] for file in all_files]
+for abstract in abstracts:
+    text = [para['text'] for para in abstract]
+    abstract_text.append(text)
+
+bodies = [file ["body_text"] for file in all_files]
+for body  in bodies:
+    text = [para['text'] for para in body]
+    body_text.append(text)
+
+formated_data = {'paper_id': paper_id, 'title': titles, 'authors_names': author_names, 'affiliations': affiliations, 'abstract':abstract_text, 'text':body_text}
+
+df = pd.DataFrame.from_dict(formated_data)
+with open(r"E:\Helen\FinalProject_INFO5731\done_for_storing\reformatted_bioRxiv.csv", "w",  newline="", encoding='utf-8') as file:
+    df.to_csv(file)
+df
